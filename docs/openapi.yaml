@@ -1,0 +1,426 @@
+openapi: 3.0.3
+info:
+  version: 0.1.0
+  title: API Service Boilerplate
+  description: Minimal API boilerplate with external auth-service integration.
+servers:
+  - description: Local development
+    url: http://localhost:3000
+paths:
+  /:
+    get:
+      tags: [root]
+      operationId: getRoot
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootResponse'
+
+  /healthcheck/liveness:
+    get:
+      tags: [healthcheck]
+      operationId: getLiveness
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+
+  /healthcheck/readiness:
+    get:
+      tags: [healthcheck]
+      operationId: getReadiness
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+        '503':
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceUnavailableResponse'
+
+  /errors/{http_code}:
+    get:
+      tags: [error]
+      operationId: getErrorExample
+      parameters:
+        - name: http_code
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: ['200', '400', '403', '422', '500']
+      responses:
+        '200':
+          description: Error example response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/InstructionResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Authenticated user context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/me/can:
+    get:
+      tags: [auth]
+      operationId: getMeCan
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Permission granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionAllowedResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/example-items:
+    get:
+      tags: [example]
+      operationId: listExampleItems
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExampleItem'
+    post:
+      tags: [example]
+      operationId: createExampleItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExampleItemRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExampleItem'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/example-items/{id}:
+    get:
+      tags: [example]
+      operationId: getExampleItemById
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExampleItem'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [example]
+      operationId: updateExampleItem
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExampleItemRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExampleItem'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [example]
+      operationId: deleteExampleItem
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    RootResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: You have successfully started the application!
+
+    LivenessResponse:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          type: string
+          example: OK
+        version:
+          type: string
+          example: 0.1.0
+
+    ReadinessResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: OK
+
+    ServiceUnavailableResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: Service Unavailable
+
+    InstructionResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Please request with 400 or 403 or 422 or 500 to get an error!
+
+    ErrorResponse:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          example: USER_AUTH_ERROR
+        message:
+          type: string
+          example: Unauthorized token
+
+    Error400Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - API_VALIDATION_ERROR
+        message:
+          type: string
+
+    Error401Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - USER_AUTH_ERROR
+        message:
+          type: string
+
+    Error403Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - REQUEST_FORBIDDEN_ERROR
+        message:
+          type: string
+
+    Error404Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - ITEM_NOT_FOUND
+        message:
+          type: string
+
+    Error422Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - UNPROCESSABLE_ENTITY_ERROR
+        message:
+          type: string
+
+    Error500Response:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+          enum:
+            - INTERNAL_SERVER_ERROR
+            - SERVER_ERROR
+        message:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        permissions:
+          type: array
+          items:
+            type: string
+      additionalProperties: true
+
+    MeResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    PermissionAllowedResponse:
+      type: object
+      required: [allowed]
+      properties:
+        allowed:
+          type: boolean
+          example: true
+
+    ExampleItem:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateExampleItemRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    UpdateExampleItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string

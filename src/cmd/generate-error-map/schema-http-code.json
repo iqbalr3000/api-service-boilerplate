@@ -1,0 +1,8 @@
+{
+    "Error400Response": 400,
+    "Error401Response": 401,
+    "Error403Response": 403,
+    "Error404Response": 404,
+    "Error422Response": 422,
+    "Error500Response": 500
+}
