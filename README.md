@@ -4,16 +4,16 @@ A minimal, production-friendly Node.js API boilerplate. The goal is a fast start
 
 ## Stack
 
-- Express + TypeScript
-- TypeORM + PostgreSQL (single connection, optional read replica)
-- Jest (unit + integration)
-- Stateless JWT auth (HS256) with a swappable verification seam
-- Structured logging, OpenAPI request validation, graceful shutdown
+-   Express + TypeScript
+-   TypeORM + PostgreSQL (single connection, optional read replica)
+-   Jest (unit + integration)
+-   Stateless JWT auth (HS256) with a swappable verification seam
+-   Structured logging, OpenAPI request validation, graceful shutdown
 
 ## Requirements
 
-- Node.js >= 20, npm >= 10
-- Docker (for the local Postgres)
+-   Node.js >= 20, npm >= 10
+-   Docker (for the local Postgres)
 
 All dependencies are public — no private registry or auth token needed.
 
@@ -21,41 +21,41 @@ All dependencies are public — no private registry or auth token needed.
 
 1. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
 2. Prepare environment:
 
-   ```bash
-   cp .env.example .env
-   ```
+    ```bash
+    cp .env.example .env
+    ```
 
 3. Start the local database:
 
-   ```bash
-   docker-compose up -d postgres
-   ```
+    ```bash
+    docker-compose up -d postgres
+    ```
 
 4. Run migrations:
 
-   ```bash
-   npm run migration:run
-   ```
+    ```bash
+    npm run migration:run
+    ```
 
 5. Start the service:
 
-   ```bash
-   npm run start:dev
-   ```
+    ```bash
+    npm run start:dev
+    ```
 
 ## Environment
 
 Required variables (the app fails fast at startup if any are missing):
 
-- `NODE_ENV`, `APP_ENV`, `PORT`
-- `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`
-- `JWT_SECRET` — secret used to verify incoming JWTs (HS256)
+-   `NODE_ENV`, `APP_ENV`, `PORT`
+-   `PGDATABASE`, `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`
+-   `JWT_SECRET` — secret used to verify incoming JWTs (HS256)
 
 See the full list in [`.env.example`](.env.example).
 
@@ -63,35 +63,33 @@ See the full list in [`.env.example`](.env.example).
 
 The default is a **single connection**. A read replica is enabled only when **all** of these are set; otherwise the service uses the primary connection only:
 
-- `PGROHOST`, `PGROPORT`, `PGROUSER`, `PGROPASSWORD`
+-   `PGROHOST`, `PGROPORT`, `PGROUSER`, `PGROPASSWORD`
 
 ## Architecture
 
 Boot order is load-bearing: `server.ts` → `createApp()` → `init()` runs `initDB()` → `runInitializers()`, then `setupController(app)` mounts the routes.
 
-- **Controllers** (decorator style, used for every route): a class with `@Controller({ prefix })` and static methods decorated `@GET/@POST/@PATCH/@DELETE`. A controller is mounted only if it is side-effect imported in `src/controllers/index.ts`. The `prefix` is the full path — app/domain routes use `/api/v1/...`, infra routes (root, healthcheck) are unversioned. Per-route middleware is attached via `preHandler` (see `controllers/me.ts`). See `controllers/example-item.ts` for the CRUD pattern.
-- **Services**: static classes under `src/services/<name>/`. They acquire their TypeORM repository in a method decorated `@Initializer()`, which runs after the DB is connected.
-- **Errors**: throw `StandardError(error_code, message)` and `next(err)`. The error middleware maps `error_code` → HTTP status via `ErrorCodeMap` (and maps OpenAPI request-validation errors to `API_VALIDATION_ERROR`). That map is **generated** from `docs/openapi.yaml` — do not edit `src/domain/errors.ts` by hand; edit the OpenAPI doc and `schema-http-code.json`, then run `npm run generate-error-map`.
-- **Validation**: `express-openapi-validator` validates requests against `docs/openapi.yaml`.
-- **Auth**: stateless JWT (HS256). `POST /api/v1/auth/register` + `/login` issue tokens (passwords hashed with scrypt; users stored in the `users` table). `auth()` verifies `Authorization: Bearer <token>` locally against `JWT_SECRET` and sets `req.auth`; `requirePermission('resource:action')` checks the token's `permissions` claim (must run after `auth()`). `services/auth/index.ts` is the seam — swap it for JWKS/RS256 or an external auth service while keeping the contract. Refresh tokens, password reset, and email verification are intentionally left out — add them per your needs.
-
-See [`CLAUDE.md`](CLAUDE.md) for a deeper map and known gotchas.
+-   **Controllers** (decorator style, used for every route): a class with `@Controller({ prefix })` and static methods decorated `@GET/@POST/@PATCH/@DELETE`. A controller is mounted only if it is side-effect imported in `src/controllers/index.ts`. The `prefix` is the full path — app/domain routes use `/api/v1/...`, infra routes (root, healthcheck) are unversioned. Per-route middleware is attached via `preHandler` (see `controllers/me.ts`). See `controllers/example-item.ts` for the CRUD pattern.
+-   **Services**: static classes under `src/services/<name>/`. They acquire their TypeORM repository in a method decorated `@Initializer()`, which runs after the DB is connected.
+-   **Errors**: throw `StandardError(error_code, message)` and `next(err)`. The error middleware maps `error_code` → HTTP status via `ErrorCodeMap` (and maps OpenAPI request-validation errors to `API_VALIDATION_ERROR`). That map is **generated** from `docs/openapi.yaml` — do not edit `src/domain/errors.ts` by hand; edit the OpenAPI doc and `schema-http-code.json`, then run `npm run generate-error-map`.
+-   **Validation**: `express-openapi-validator` validates requests against `docs/openapi.yaml`.
+-   **Auth**: stateless JWT (HS256). `POST /api/v1/auth/register` + `/login` issue tokens (passwords hashed with scrypt; users stored in the `users` table). `auth()` verifies `Authorization: Bearer <token>` locally against `JWT_SECRET` and sets `req.auth`; `requirePermission('resource:action')` checks the token's `permissions` claim (must run after `auth()`). `services/auth/index.ts` is the seam — swap it for JWKS/RS256 or an external auth service while keeping the contract. Refresh tokens, password reset, and email verification are intentionally left out — add them per your needs.
 
 ## Scripts
 
-| Script | Description |
-| --- | --- |
-| `npm run start:dev` | Run the app in watch mode |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm run lint` / `lint:fix` | Run ESLint |
-| `npm run format` / `format:check` | Run Prettier |
-| `npm test` | Run unit tests |
-| `npm run test-integration` | Run integration tests (needs the test DB up) |
-| `npm run test:all` | Run all tests |
-| `npm run migration:run` | Apply the latest migrations |
-| `npm run migration:generate` | Generate a migration from entity changes |
-| `npm run migration:revert` | Roll back one migration |
-| `npm run generate-error-map` | Regenerate `src/domain/errors.ts` from the OpenAPI doc |
+| Script                            | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| `npm run start:dev`               | Run the app in watch mode                              |
+| `npm run build`                   | Compile TypeScript to `dist/`                          |
+| `npm run lint` / `lint:fix`       | Run ESLint                                             |
+| `npm run format` / `format:check` | Run Prettier                                           |
+| `npm test`                        | Run unit tests                                         |
+| `npm run test-integration`        | Run integration tests (needs the test DB up)           |
+| `npm run test:all`                | Run all tests                                          |
+| `npm run migration:run`           | Apply the latest migrations                            |
+| `npm run migration:generate`      | Generate a migration from entity changes               |
+| `npm run migration:revert`        | Roll back one migration                                |
+| `npm run generate-error-map`      | Regenerate `src/domain/errors.ts` from the OpenAPI doc |
 
 ## Testing
 
@@ -108,10 +106,10 @@ The test DB runs on a separate port (`54320`) and `jest-global-setup.js` refuses
 
 After the service is running, the basic endpoints to verify:
 
-- `GET /`
-- `GET /healthcheck/liveness`
-- `GET /healthcheck/readiness`
-- `GET /api/v1/example-items`
+-   `GET /`
+-   `GET /healthcheck/liveness`
+-   `GET /healthcheck/readiness`
+-   `GET /api/v1/example-items`
 
 ### Authentication
 
@@ -135,10 +133,6 @@ curl -s localhost:3000/api/v1/me -H "Authorization: Bearer $TOKEN"
 ## Example module
 
 A full CRUD example lives in the `example-items` module (controller + service + TypeORM entity + migration). It is the canonical reference for the controller/service/repository pattern and for throwing `StandardError`. It is self-contained — to remove it, delete the `example-item.*` files, drop its import from `src/controllers/index.ts`, and empty the `entities` array in `src/libs/typeorm/entities.ts`.
-
-## Making it your own
-
-Set `package.json` `name`/`author`, `SERVICE_NAME`, and the compose `container_name` to your service. The project is released into the public domain under the [Unlicense](LICENSE) — change it if you need different terms.
 
 ## Notes
 
