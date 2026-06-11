@@ -21,23 +21,33 @@ describe('auth middleware', () => {
         next = jest.fn();
     });
 
-    it('returns 401 for missing bearer token', async () => {
+    it('returns 401 for missing bearer token', () => {
         (req.header as jest.Mock).mockReturnValue(undefined);
 
-        await auth()(req, res, next);
+        auth()(req, res, next);
 
         expect(res.status).toHaveBeenCalledWith(401);
         expect(next).not.toHaveBeenCalled();
     });
 
-    it('sets req.auth and calls next when token is valid', async () => {
+    it('returns 401 when the token is invalid', () => {
+        (req.header as jest.Mock).mockReturnValue('Bearer bad-token');
+        mockedAuthService.authenticateToken.mockReturnValueOnce({ ok: false, error: 'unauthorized' });
+
+        auth()(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('sets req.auth and calls next when token is valid', () => {
         (req.header as jest.Mock).mockReturnValue('Bearer token-123');
-        mockedAuthService.authenticateToken.mockResolvedValueOnce({
+        mockedAuthService.authenticateToken.mockReturnValueOnce({
             ok: true,
             user: { userId: 'u-1', email: 'u@mail.com' },
         });
 
-        await auth()(req, res, next);
+        auth()(req, res, next);
 
         expect(req.auth).toEqual({ userId: 'u-1', email: 'u@mail.com' });
         expect(req.authToken).toBe('token-123');

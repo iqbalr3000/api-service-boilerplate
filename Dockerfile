@@ -4,17 +4,11 @@ FROM node:20 AS base
 FROM base AS builder
 WORKDIR /app
 
-COPY package*.json .npmrc.example ./
-
-ARG GITHUB_REGISTRY_TOKEN
+COPY package*.json ./
 
 RUN set -ex; \
-    mv .npmrc.example .npmrc; \
-    echo "" >> .npmrc; \
-    echo "//npm.pkg.github.com/:_authToken=$GITHUB_REGISTRY_TOKEN" >> .npmrc; \
     npm ci; \
-    npm cache clean --force; \
-    rm -f .npmrc
+    npm cache clean --force
 
 COPY . ./
 RUN npm run build
@@ -24,30 +18,28 @@ RUN npm run build
 FROM base AS deps-builder
 WORKDIR /app
 
-COPY package*.json .npmrc.example ./
-
-ARG GITHUB_REGISTRY_TOKEN
+COPY package*.json ./
 
 RUN set -ex; \
-    mv .npmrc.example .npmrc; \
-    echo "" >> .npmrc; \
-    echo "//npm.pkg.github.com/:_authToken=$GITHUB_REGISTRY_TOKEN" >> .npmrc; \
     npm pkg delete scripts.prepare || true; \
     npm ci --omit=dev; \
-    npm cache clean --force; \
-    rm -f .npmrc
+    npm cache clean --force
 
 
 # Dist
-FROM node:20 AS dist
+FROM node:20-slim AS dist
 WORKDIR /app
 
-COPY --from=deps-builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/docs ./docs
+COPY --chown=node:node --from=deps-builder /app/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/docs ./docs
 
 ARG VERSION
 ENV VERSION=$VERSION
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 CMD node -e "fetch('http://localhost:3000/healthcheck/readiness').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+USER node
 CMD ["node", "dist/src/server.js"]

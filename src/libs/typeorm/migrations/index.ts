@@ -1,3 +1,3 @@
 import path from 'path';
 
-export const migrations = [path.join(__dirname, '*-baskit-db-migration.ts')];
+export const migrations = [path.join(__dirname, '*-db-migration{.ts,.js}')];

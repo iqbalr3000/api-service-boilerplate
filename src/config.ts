@@ -25,11 +25,6 @@ export const PGROUSER = Env.get('PGROUSER').asString();
 export const PGROPASSWORD = Env.get('PGROPASSWORD').asString();
 export const HAS_DB_REPLICA = Boolean(PGROHOST && PGROPORT && PGROUSER && PGROPASSWORD);
 
-// External auth service integration
-export const AUTH_SERVICE_URL = Env.get('AUTH_SERVICE_URL').default('http://localhost:3002').asString();
-export const AUTH_VALIDATE_PATH = Env.get('AUTH_VALIDATE_PATH').default('/api/v1/auth/verify-token').asString();
-export const AUTH_VERIFY_PERMISSION_PATH = Env.get('AUTH_VERIFY_PERMISSION_PATH')
-    .default('/api/v1/auth/verify-permission')
-    .asString();
-export const AUTH_FALLBACK_TIMEOUT_MS = Env.get('AUTH_FALLBACK_TIMEOUT_MS').default(3000).asIntPositive();
-export const AUTH_TOKEN_CACHE_TTL_SECONDS = Env.get('AUTH_TOKEN_CACHE_TTL_SECONDS').default(120).asIntPositive();
+// Auth: stateless JWT (HS256). The secret signs tokens at login and verifies them on each request.
+export const JWT_SECRET = Env.get('JWT_SECRET').required().asString();
+export const JWT_EXPIRES_IN_SECONDS = Env.get('JWT_EXPIRES_IN_SECONDS').default(3600).asIntPositive();

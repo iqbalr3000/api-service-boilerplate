@@ -11,8 +11,3 @@ export type AuthResult = {
     user?: AuthUser;
     error?: string;
 };
-
-export type PermissionResult = {
-    allowed: boolean;
-    reason?: string;
-};

@@ -1,3 +1,3 @@
 import path from 'path';
 
-export const seedMigrations = [path.join(__dirname, '*-baskit-db-seed.ts')];
+export const seedMigrations = [path.join(__dirname, '*-db-seed{.ts,.js}')];

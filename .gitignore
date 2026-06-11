@@ -6,3 +6,5 @@ coverage/
 .env.test.local
 postgres-data/
 .DS_Store
+
+CLAUDE.md

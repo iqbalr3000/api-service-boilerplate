@@ -1,11 +1,11 @@
 import 'source-map-support/register';
 import './module-alias';
 
-import { logErrror, logger } from 'src/libs/logger';
+import { logError, logger } from 'src/libs/logger';
 import { createApp } from 'src/app';
 import gracefulShutdown from 'http-graceful-shutdown';
 
-const TRAEFIK_IDLE_TIMEOUT = 180; // Traefik, Trident's transport layer, has this default idle timeout in ms
+const PROXY_IDLE_TIMEOUT = 180; // Default idle timeout (seconds) of the reverse proxy / load balancer in front of this service
 
 /**
  * Helper function to log an exit code before exiting the process.
@@ -28,7 +28,7 @@ const setupProcessEventListeners = () => {
     });
 
     process.on('uncaughtException', (err: Error) => {
-        logErrror(err, `encountered uncaught exception: ${err}`);
+        logError(err, `encountered uncaught exception: ${err}`);
         logAndExitProcess(1);
     });
 
@@ -51,7 +51,7 @@ const setupProcessEventListeners = () => {
         /**
          * These settings are to avoid 502 HTTP errors (connection reset by peer)
          * TLDR:
-         * keepAliveTimeout needs to be greater than TRAEFIK_IDLE_TIMEOUT
+         * keepAliveTimeout needs to be greater than the reverse proxy / load balancer idle timeout
          * headersTimeout needs to be greater than keepAliveTimeout
          * Further reading:
          *   https://shuheikagawa.com/blog/2019/04/25/keep-alive-timeout/
@@ -61,12 +61,12 @@ const setupProcessEventListeners = () => {
          *   https://doc.traefik.io/traefik/routing/entrypoints/#transport
          */
 
-        server.keepAliveTimeout = (TRAEFIK_IDLE_TIMEOUT + 1) * 1000;
-        server.headersTimeout = (TRAEFIK_IDLE_TIMEOUT + 5) * 1000;
+        server.keepAliveTimeout = (PROXY_IDLE_TIMEOUT + 1) * 1000;
+        server.headersTimeout = (PROXY_IDLE_TIMEOUT + 5) * 1000;
 
         gracefulShutdown(server);
         setupProcessEventListeners();
     } catch (err) {
-        logErrror(err, `error caught in server.ts: ${err}`);
+        logError(err, `error caught in server.ts: ${err}`);
     }
 })();

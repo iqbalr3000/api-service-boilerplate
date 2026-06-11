@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { authenticateToken } from 'src/services/auth';
+import { ErrorCodes } from 'src/domain/errors';
 
 function extractBearerToken(authorizationHeader?: string): string | null {
     if (!authorizationHeader) {
@@ -15,23 +16,21 @@ function extractBearerToken(authorizationHeader?: string): string | null {
 }
 
 export function auth() {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return (req: Request, res: Response, next: NextFunction): void => {
         const token = extractBearerToken(req.header('authorization'));
 
         if (!token) {
-            res.status(401).json({ error_code: 'USER_AUTH_ERROR', message: 'Missing or invalid bearer token' });
+            res.status(401).json({
+                error_code: ErrorCodes.USER_AUTH_ERROR,
+                message: 'Missing or invalid bearer token',
+            });
             return;
         }
 
-        const result = await authenticateToken(token);
+        const result = authenticateToken(token);
 
         if (!result.ok || !result.user) {
-            const statusCode = Number(result.error || '401');
-            const mappedStatus = Number.isFinite(statusCode) ? statusCode : 401;
-            res.status(mappedStatus >= 500 ? mappedStatus : 401).json({
-                error_code: mappedStatus >= 500 ? 'AUTH_SERVICE_UNAVAILABLE' : 'USER_AUTH_ERROR',
-                message: mappedStatus >= 500 ? 'Auth service unavailable' : 'Unauthorized token',
-            });
+            res.status(401).json({ error_code: ErrorCodes.USER_AUTH_ERROR, message: 'Invalid or expired token' });
             return;
         }
 
@@ -39,15 +38,4 @@ export function auth() {
         req.authToken = token;
         next();
     };
-}
-
-export function serviceBasicAuth() {
-    return (_req: Request, _res: Response, next: NextFunction): void => {
-        // Placeholder for backward compatibility. Enable only if needed by legacy clients.
-        next();
-    };
-}
-
-export function fullAuth() {
-    return auth();
 }

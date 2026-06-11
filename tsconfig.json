@@ -8,14 +8,7 @@
         "experimentalDecorators": true,
         "esModuleInterop": true,
         "emitDecoratorMetadata": true,
-        "noImplicitAny": true,
-        "strict": false,
-        "strictNullChecks": true,
-        "strictFunctionTypes": true,
-        "strictBindCallApply": true,
-        "useUnknownInCatchVariables": true,
-        "alwaysStrict": true,
-        "noImplicitThis": true,
+        "strict": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitOverride": true,
         "outDir": "./dist/",
@@ -30,5 +23,6 @@
         "target": "es2020",
         "typeRoots": ["node_modules/@types"]
     },
+    "include": ["src/**/*", "global.d.ts"],
     "exclude": ["clients", "dist"]
 }

@@ -1,20 +1,13 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response } from 'express';
+import { Controller, GET } from 'src/decorators';
 import { HealthcheckService } from 'src/services/healthcheck';
 import pkg from '../../package.json';
 
+@Controller({
+    prefix: '/healthcheck',
+})
 export class HealthcheckController {
-    private router: Router;
-
-    constructor() {
-        this.router = Router();
-        this.router.get('/liveness', HealthcheckController.getHealthcheckLiveness);
-        this.router.get('/readiness', HealthcheckController.getHealthcheckReadiness);
-    }
-
-    getRouter(): Router {
-        return this.router;
-    }
-
+    @GET({ path: '/liveness' })
     static async getHealthcheckLiveness(_: Request, res: Response): Promise<Response> {
         return res.status(200).json({
             status: 'OK',
@@ -22,6 +15,7 @@ export class HealthcheckController {
         });
     }
 
+    @GET({ path: '/readiness' })
     static async getHealthcheckReadiness(_: Request, res: Response): Promise<Response> {
         if (!(await HealthcheckService.isDBReady())) {
             return res.status(503).json({

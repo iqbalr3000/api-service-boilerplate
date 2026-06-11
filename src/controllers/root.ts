@@ -1,22 +1,16 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response } from 'express';
+import { Controller, GET } from 'src/decorators';
 
+@Controller({
+    prefix: '/',
+})
 export class RootController {
-    private router: Router;
-
-    constructor() {
-        this.router = Router();
-        this.router.get('/', RootController.index);
-    }
-
-    getRouter(): Router {
-        return this.router;
-    }
-
     /**
      * GET /
      * Home
      */
-    static index(_: Request, res: Response): Response {
+    @GET({ path: '' })
+    static index(_req: Request, res: Response): Response {
         return res.status(200).json({ message: 'You have successfully started the application!' });
     }
 }

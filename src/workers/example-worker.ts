@@ -1,6 +1,6 @@
 import '../module-alias';
 
-import { logErrror, logger } from 'src/libs/logger';
+import { logError, logger } from 'src/libs/logger';
 import { sleep } from 'src/libs/sleep';
 
 const doWork = async () => {
@@ -15,7 +15,7 @@ const doWork = async () => {
         try {
             await doWork(); // eslint-disable-line
         } catch (err) {
-            logErrror(err, `error in worker: ${err}`);
+            logError(err, `error in worker: ${err}`);
         } finally {
             logger.info('done');
         }

@@ -1,19 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { requirePermission } from 'src/controllers/middlewares/permission';
-import * as authService from 'src/services/auth';
-
-jest.mock('src/services/auth');
+import { AuthUser } from 'src/services/auth';
 
 describe('permission middleware', () => {
-    const mockedAuthService = authService as jest.Mocked<typeof authService>;
-    let req: Request;
     let res: Response;
     let next: NextFunction;
 
+    const reqWith = (user?: AuthUser) => ({ auth: user }) as unknown as Request;
+
     beforeEach(() => {
-        req = {
-            authToken: 'token-123',
-        } as unknown as Request;
         res = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn().mockReturnThis(),
@@ -21,18 +16,21 @@ describe('permission middleware', () => {
         next = jest.fn();
     });
 
-    it('calls next when permission is allowed', async () => {
-        mockedAuthService.verifyPermission.mockResolvedValueOnce({ allowed: true });
+    it('returns 401 when no authenticated user is present', () => {
+        requirePermission('users:read')(reqWith(undefined), res, next);
 
-        await requirePermission('users:read')(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('calls next when the user holds the permission', () => {
+        requirePermission('users:read')(reqWith({ userId: 'u-1', permissions: ['users:read'] }), res, next);
 
         expect(next).toHaveBeenCalled();
     });
 
-    it('returns 403 when permission is forbidden', async () => {
-        mockedAuthService.verifyPermission.mockResolvedValueOnce({ allowed: false, reason: 'forbidden' });
-
-        await requirePermission('users:read')(req, res, next);
+    it('returns 403 when the user lacks the permission', () => {
+        requirePermission('users:read')(reqWith({ userId: 'u-1', permissions: ['users:write'] }), res, next);
 
         expect(res.status).toHaveBeenCalledWith(403);
         expect(next).not.toHaveBeenCalled();

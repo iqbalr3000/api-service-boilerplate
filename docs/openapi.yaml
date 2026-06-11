@@ -49,26 +49,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServiceUnavailableResponse'
 
-  /errors/{http_code}:
-    get:
-      tags: [error]
-      operationId: getErrorExample
-      parameters:
-        - name: http_code
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: ['200', '400', '403', '422', '500']
+  /api/v1/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
-        '200':
-          description: Error example response
+        '201':
+          description: Created
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/InstructionResponse'
-                  - $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/me:
     get:
@@ -270,14 +309,6 @@ components:
           type: string
           example: Service Unavailable
 
-    InstructionResponse:
-      type: object
-      required: [message]
-      properties:
-        message:
-          type: string
-          example: Please request with 400 or 403 or 422 or 500 to get an error!
-
     ErrorResponse:
       type: object
       required: [error_code, message]
@@ -356,6 +387,60 @@ components:
             - SERVER_ERROR
         message:
           type: string
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    PublicUser:
+      type: object
+      required: [id, email, permissions]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+          nullable: true
+        permissions:
+          type: array
+          items:
+            type: string
+
+    RegisterResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/PublicUser'
+
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/PublicUser'
 
     AuthUser:
       type: object

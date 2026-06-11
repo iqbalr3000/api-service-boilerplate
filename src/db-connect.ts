@@ -3,7 +3,7 @@ import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { Pool } from 'pg';
 
 import { sleep } from './libs/sleep';
-import { logErrror, logger } from './libs/logger';
+import { logError, logger } from './libs/logger';
 import { OrmConfig } from './libs/typeorm/ormconfig';
 import { IS_TEST } from './config';
 
@@ -15,18 +15,18 @@ function connectionGuard(dataSource: DataSource) {
 
         // Add handler on pool error event
         pool.on('error', async (err: Error) => {
-            logErrror(err, 'Connection pool erring out, Reconnecting...');
+            logError(err, 'Connection pool erring out, Reconnecting...');
             try {
                 await dataSource.destroy();
             } catch (innerErr) {
-                logErrror(innerErr, `Failed to close connection: ${innerErr}`);
+                logError(innerErr, `Failed to close connection: ${innerErr}`);
             }
             while (!dataSource.isInitialized) {
                 try {
                     await dataSource.initialize(); // eslint-disable-line
                     logger.info('Reconnected DB');
                 } catch (error) {
-                    logErrror(error, `Reconnect Error: ${error}`);
+                    logError(error, `Reconnect Error: ${error}`);
                 }
 
                 if (!dataSource.isInitialized) {
@@ -52,7 +52,7 @@ export async function connect(): Promise<DataSource> {
             // eslint-disable-next-line no-await-in-loop
             await dataSource.initialize();
         } catch (error) {
-            logErrror(error, `createConnection Error: ${error}`);
+            logError(error, `createConnection Error: ${error}`);
 
             if (IS_TEST) {
                 throw error;

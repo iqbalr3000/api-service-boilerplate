@@ -1,18 +1,17 @@
-import express, { Router } from 'express';
+import path from 'path';
+import express from 'express';
 import httpContext from 'express-http-context';
 import compression from 'compression';
 import helmet from 'helmet';
-import { CompanyOpenApiValidator } from '@baskit-app/baskit-openapi-validator';
+import pinoHttp from 'pino-http';
+import * as OpenApiValidator from 'express-openapi-validator';
 
 import { PORT } from 'src/config';
 import { logger } from 'src/libs/logger';
 import { errorHandler } from 'src/controllers/middlewares/handle-error-code';
-import { auth } from 'src/controllers/middlewares/auth';
-import { requirePermission } from 'src/controllers/middlewares/permission';
 
 import { init } from 'src/init';
 import { DataSource } from 'typeorm';
-import { createMiddleware } from '@baskit-app/baskit-node-logger';
 import { getDB } from './data-source';
 import { setupController } from './decorators';
 
@@ -32,31 +31,26 @@ export async function createApp(): Promise<Application> {
     app.use(express.json({ limit: '5mb', type: 'application/json' }));
     app.use(express.urlencoded({ extended: true }));
 
-    app.use(createMiddleware(logger));
+    app.use(pinoHttp({ logger }));
 
-    new CompanyOpenApiValidator().install(app);
+    app.use(
+        OpenApiValidator.middleware({
+            apiSpec: path.join(process.cwd(), 'docs', 'openapi.yaml'),
+            validateRequests: true,
+            validateResponses: false,
+        }),
+    );
 
     // This should be last, right before routes are installed
     // so we can have access to context of all previously installed
     // middlewares inside our routes to be logged
     app.use(httpContext.middleware);
 
-    const { rootController, errorController, healthcheckController } = await init();
+    await init();
 
-    const apiRouter = Router();
-
-    setupController(apiRouter);
-    apiRouter.get('/me', auth(), (req, res) => {
-        res.status(200).json({ user: req.auth });
-    });
-    apiRouter.get('/me/can', auth(), requirePermission('sample:read'), (_req, res) => {
-        res.status(200).json({ allowed: true });
-    });
-
-    app.use('/api/v1', apiRouter);
-    app.use('/healthcheck', healthcheckController.getRouter());
-    app.use('/errors', errorController.getRouter());
-    app.use('/', rootController.getRouter());
+    // Mount all decorator controllers (registered via side-effect imports in src/controllers).
+    // Each controller declares its full path prefix, e.g. '/api/v1/example-items' or '/healthcheck'.
+    setupController(app);
 
     // In order for errors from async controller methods to be thrown here,
     // you need to catch the errors in the controller and use `next(err)`.

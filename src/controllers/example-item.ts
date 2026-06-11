@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import { Controller, DELETE, GET, PATCH, POST } from 'src/decorators';
 import { IDParams } from 'src/libs/shared';
+import { StandardError } from 'src/domain/standard-error';
+import { ErrorCodes } from 'src/domain/errors';
 import { ExampleItemService } from 'src/services/example-item';
 
 @Controller({
-    prefix: '/example-items',
+    prefix: '/api/v1/example-items',
 })
 export class ExampleItemController {
     @GET({ path: '' })
@@ -23,10 +25,7 @@ export class ExampleItemController {
             const { id } = req.params as IDParams;
             const item = await ExampleItemService.findById(id);
             if (!item) {
-                return res.status(404).json({
-                    error_code: 'ITEM_NOT_FOUND',
-                    message: 'Example item not found',
-                });
+                throw new StandardError(ErrorCodes.ITEM_NOT_FOUND, 'Example item not found');
             }
 
             return res.status(200).json(item);
@@ -39,11 +38,10 @@ export class ExampleItemController {
     static async create(req: Request, res: Response, next: NextFunction) {
         try {
             const { name, description } = req.body as { name?: string; description?: string };
+            // OpenAPI validation already enforces `name` is a required string; here we additionally
+            // reject empty/whitespace-only values, which the schema cannot express.
             if (!name || !name.trim()) {
-                return res.status(400).json({
-                    error_code: 'VALIDATION_ERROR',
-                    message: 'name is required',
-                });
+                throw new StandardError(ErrorCodes.VALIDATION_ERROR, 'name is required');
             }
 
             const item = await ExampleItemService.create({ name: name.trim(), description });
@@ -59,10 +57,7 @@ export class ExampleItemController {
             const { id } = req.params as IDParams;
             const { name, description } = req.body as { name?: string; description?: string };
             if (name !== undefined && !name.trim()) {
-                return res.status(400).json({
-                    error_code: 'VALIDATION_ERROR',
-                    message: 'name cannot be empty',
-                });
+                throw new StandardError(ErrorCodes.VALIDATION_ERROR, 'name cannot be empty');
             }
 
             const item = await ExampleItemService.update(id, {
@@ -71,10 +66,7 @@ export class ExampleItemController {
             });
 
             if (!item) {
-                return res.status(404).json({
-                    error_code: 'ITEM_NOT_FOUND',
-                    message: 'Example item not found',
-                });
+                throw new StandardError(ErrorCodes.ITEM_NOT_FOUND, 'Example item not found');
             }
 
             return res.status(200).json(item);
@@ -89,10 +81,7 @@ export class ExampleItemController {
             const { id } = req.params as IDParams;
             const deleted = await ExampleItemService.delete(id);
             if (!deleted) {
-                return res.status(404).json({
-                    error_code: 'ITEM_NOT_FOUND',
-                    message: 'Example item not found',
-                });
+                throw new StandardError(ErrorCodes.ITEM_NOT_FOUND, 'Example item not found');
             }
 
             return res.status(204).send();

@@ -3,17 +3,17 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 @Entity('example_items')
 export class ExampleItem {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column({ type: 'text' })
-    name: string;
+    name!: string;
 
     @Column({ type: 'text', nullable: true })
-    description: string | null;
+    description!: string | null;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-    updatedAt: Date;
+    updatedAt!: Date;
 }

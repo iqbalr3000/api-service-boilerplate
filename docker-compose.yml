@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
-    image: 'postgres:10.7'
+    image: 'postgres:16'
     environment:
       - POSTGRES_USER=test
       - POSTGRES_PASSWORD=test
@@ -16,11 +14,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - GITHUB_REGISTRY_TOKEN=$GITHUB_REGISTRY_TOKEN
     depends_on:
       - postgres
-    container_name: 'nodesampleapp'
+    container_name: 'api-service-boilerplate'
     ports:
       - 3000:3000
     environment:
@@ -36,19 +32,3 @@ services:
       - /app/node_modules
       - /app/dist
       - /app/docs
-
-  datadog-agent:
-    image: datadog/agent:latest
-    ports:
-      - 8126:8126
-      - 8125:8125/udp
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
-    environment:
-      DOCKER_CONTENT_TRUST: 1
-      DD_API_KEY: ${DD_API_KEY}
-      DD_SITE: datadoghq.com
-      DD_APM_ENABLED: 'true'
-      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: 'true'
