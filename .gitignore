@@ -8,4 +8,5 @@ postgres-data/
 .DS_Store
 
 # Personal, uncommitted agent notes
+CLAUDE.md
 CLAUDE.local.md

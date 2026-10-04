@@ -4,7 +4,7 @@
 
 A minimal, production-friendly Node.js API boilerplate.
 
-The goal is a fast start for new services with a clear structure and as little speculative abstraction as possible — add modules when real requirements appear, not before.
+The goal is a fast start for new services with a clear structure and as little speculative abstraction as possible. Add modules when real requirements appear, not before.
 
 <br>
 
@@ -26,12 +26,12 @@ The goal is a fast start for new services with a clear structure and as little s
 
 ## Stack
 
--   **Runtime** — Node.js 24, Express 5, TypeScript (strict)
--   **Database** — PostgreSQL + TypeORM (single connection, optional read replica)
--   **Auth** — stateless JWT (HS256) with a swappable verification seam
--   **API contract** — OpenAPI request validation and generated error codes
--   **Operations** — structured logging, graceful shutdown, health probes, rate-limited auth
--   **Testing** — Jest (unit + integration against a real Postgres)
+-   **Runtime:** Node.js 24, Express 5, TypeScript (strict)
+-   **Database:** PostgreSQL + TypeORM (single connection, optional read replica)
+-   **Auth:** stateless JWT (HS256) with a swappable verification seam
+-   **API contract:** OpenAPI request validation and generated error codes
+-   **Operations:** structured logging, graceful shutdown, health probes, rate-limited auth
+-   **Testing:** Jest (unit + integration against a real Postgres)
 
 <br>
 
@@ -40,7 +40,7 @@ The goal is a fast start for new services with a clear structure and as little s
 -   Node.js >= 24, npm >= 10
 -   Docker (for the local Postgres)
 
-All dependencies are public — no private registry or auth token needed.
+All dependencies are public, so no private registry or auth token is needed.
 
 <br>
 
@@ -102,7 +102,7 @@ See the full list in [`.env.example`](.env.example).
 | `PORT`                   | `3000`         | HTTP port                                                                   |
 | `JWT_EXPIRES_IN_SECONDS` | `3600`         | Token lifetime                                                              |
 | `AUTH_RATE_LIMIT_MAX`    | `20`           | Requests per IP per 15 minutes across `/auth/register` + `/auth/login`      |
-| `TRUST_PROXY_HOPS`       | `0`            | Number of proxies / load balancers in front of the app — see [Deployment](#deployment) |
+| `TRUST_PROXY_HOPS`       | `0`            | Number of proxies / load balancers in front of the app. See [Deployment](#deployment). |
 
 ### Read replica
 
@@ -128,7 +128,7 @@ Every route uses a decorator controller: a class with `@Controller({ prefix })` 
 
 -   A controller is mounted only if it is side-effect imported in `src/controllers/index.ts`.
 -   The `prefix` is the full path. App routes use `/api/v1/...`; infra routes (root, healthcheck) are unversioned.
--   Per-route middleware is attached via `preHandler` — see `controllers/me.ts`.
+-   Per-route middleware is attached via `preHandler` (see `controllers/me.ts`).
 -   `controllers/example-item.ts` is the reference CRUD pattern.
 
 ### Services
@@ -148,7 +148,7 @@ The middleware maps each `error_code` to an HTTP status:
 -   Unknown routes → `ROUTE_NOT_FOUND`
 -   Anything else → `500 SERVER_ERROR` (the request body is never logged)
 
-> **Error codes are generated.** Don't edit `src/domain/errors.ts` by hand — edit `docs/openapi.yaml` and `schema-http-code.json`, then run `npm run generate-error-map`.
+> **Error codes are generated.** Don't edit `src/domain/errors.ts` by hand. Edit `docs/openapi.yaml` and `schema-http-code.json`, then run `npm run generate-error-map`.
 
 ### Validation
 
@@ -158,14 +158,14 @@ The middleware maps each `error_code` to an HTTP status:
 
 ### Auth
 
-Stateless JWT (HS256), verified locally on every request — no network call.
+Stateless JWT (HS256), verified locally on every request with no network call.
 
 -   `POST /api/v1/auth/register` and `/login` issue tokens. Passwords are hashed with scrypt; users live in the `users` table.
 -   `auth()` verifies `Authorization: Bearer <token>` and sets `req.auth`.
 -   `requirePermission('resource:action')` checks the token's `permissions` claim. It must run after `auth()`.
--   `services/auth/index.ts` is the seam — swap it for JWKS/RS256 or an external auth service while keeping the contract.
+-   `services/auth/index.ts` is the seam: swap it for JWKS/RS256 or an external auth service while keeping the contract.
 
-Refresh tokens, password reset and email verification are intentionally left out — add them per your needs.
+Refresh tokens, password reset and email verification are intentionally left out. Add them per your needs.
 
 <br>
 
@@ -202,7 +202,7 @@ docker-compose -f docker-compose.test.yml up -d
 npm run test-integration
 ```
 
-The test database runs on a separate port (`54320`), and `jest-global-setup.js` refuses to run unless `PGDATABASE=test` — so it can never wipe a real database.
+The test database runs on a separate port (`54320`), and `jest-global-setup.js` refuses to run unless `PGDATABASE=test`, so it can never wipe a real database.
 
 CI runs lint, format check, build and the full test suite on every push and pull request.
 
@@ -256,7 +256,7 @@ openssl rand -base64 48
 
 ### 2. Migrations
 
-Run migrations as a **separate step before rolling out** the new version (a release job, an init container or a CI step) — never on app boot, so several instances don't race.
+Run migrations as a **separate step before rolling out** the new version (a release job, an init container or a CI step). Never run them on app boot, so several instances don't race.
 
 The production image contains no TypeScript sources, so use the compiled CLI:
 
@@ -281,7 +281,7 @@ On `SIGTERM` the server stops accepting connections, drains in-flight requests a
 
 Set `TRUST_PROXY_HOPS` to the number of proxies in front of the app, so `req.ip` (used by rate limiting and logs) is the real client IP.
 
-Leave it at `0` when the app is exposed directly — otherwise clients can spoof `X-Forwarded-For`.
+Leave it at `0` when the app is exposed directly. Otherwise clients can spoof `X-Forwarded-For`.
 
 The server's keep-alive timeout assumes a proxy idle timeout of 180s (`server.ts`). Align it with your load balancer.
 
@@ -293,7 +293,7 @@ With multiple instances, plug a shared store (e.g. Redis) into `src/controllers/
 
 ### Not included
 
-Intentionally left out — add them when you need them:
+Intentionally left out. Add them when you need them:
 
 -   Metrics and tracing
 -   CORS
@@ -322,4 +322,4 @@ It is self-contained. To remove it:
 
 This boilerplate is intentionally small. Add modules based on real needs, and avoid introducing abstractions before a concrete use case exists.
 
-**AI coding agents:** project conventions and gotchas live in [`AGENTS.md`](AGENTS.md). Claude Code picks it up through `CLAUDE.md`.
+**AI coding agents:** project conventions and gotchas live in [`AGENTS.md`](AGENTS.md). For Claude Code, create a local `CLAUDE.md` containing `@AGENTS.md` (it is gitignored).
