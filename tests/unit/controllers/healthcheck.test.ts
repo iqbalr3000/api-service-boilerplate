@@ -15,7 +15,7 @@ describe('HealthcheckController', () => {
     });
 
     describe('GET /healthcheck/liveness', () => {
-        test('should return 200 OK', async () => {
+        test('should return 200 OK', () => {
             HealthcheckController.getHealthcheckLiveness(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);

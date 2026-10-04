@@ -1,7 +1,3 @@
-/* eslint no-process-env: "off" */
-/* eslint import/no-extraneous-dependencies: "off" */
-/* eslint @typescript-eslint/no-var-requires: "off" */
-
 // Why this file is .js and not .ts
 // https://github.com/kulshekhar/ts-jest/issues/411
 

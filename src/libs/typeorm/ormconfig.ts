@@ -5,7 +5,7 @@ import { migrations } from 'src/libs/typeorm/migrations';
 import {
     IS_PRODUCTION,
     IS_TEST,
-    HAS_DB_REPLICA,
+    DB_REPLICA,
 
     // Envvars for default database connection
     PGHOST,
@@ -13,12 +13,6 @@ import {
     PGUSER,
     PGPASSWORD,
     PGDATABASE,
-
-    // Envvars for read replica database connection
-    PGROHOST,
-    PGROPORT,
-    PGROUSER,
-    PGROPASSWORD,
 } from 'src/config';
 
 const baseConfig: DataSourceOptions = {
@@ -55,7 +49,7 @@ const baseConfig: DataSourceOptions = {
     },
 };
 
-export const OrmConfig: DataSourceOptions = HAS_DB_REPLICA
+export const OrmConfig: DataSourceOptions = DB_REPLICA
     ? {
           ...baseConfig,
           replication: {
@@ -66,15 +60,7 @@ export const OrmConfig: DataSourceOptions = HAS_DB_REPLICA
                   username: PGUSER,
                   password: PGPASSWORD,
               },
-              slaves: [
-                  {
-                      database: PGDATABASE,
-                      host: PGROHOST!,
-                      port: PGROPORT!,
-                      username: PGROUSER!,
-                      password: PGROPASSWORD!,
-                  },
-              ],
+              slaves: [{ database: PGDATABASE, ...DB_REPLICA }],
           },
       }
     : {

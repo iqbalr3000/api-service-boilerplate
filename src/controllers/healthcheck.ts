@@ -8,7 +8,7 @@ import pkg from '../../package.json';
 })
 export class HealthcheckController {
     @GET({ path: '/liveness' })
-    static async getHealthcheckLiveness(_: Request, res: Response): Promise<Response> {
+    static getHealthcheckLiveness(_: Request, res: Response): Response {
         return res.status(200).json({
             status: 'OK',
             version: pkg.version,

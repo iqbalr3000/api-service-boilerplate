@@ -1,4 +1,3 @@
-/* eslint-disable */
 import 'jest-extended';
 import { AuthUser } from 'src/services/auth';
 

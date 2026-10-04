@@ -9,7 +9,7 @@ describe('RootController', () => {
     });
 
     describe('GET /', () => {
-        it('should return 200 OK', async () => {
+        it('should return 200 OK', () => {
             RootController.index({} as Request, res);
 
             expect(res.status).toHaveBeenCalledWith(200);

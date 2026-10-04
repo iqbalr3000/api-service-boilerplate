@@ -2,10 +2,10 @@ const initSet = new Set<() => unknown>();
 
 export function Initializer(): MethodDecorator {
     return (target, _key, descriptor) => {
-        const prop = descriptor.value;
-        if (typeof prop === 'function') {
-            initSet.add(prop.bind(target));
+        if (typeof descriptor.value !== 'function') {
+            throw new Error('Initializer decorator can only be applied to methods');
         }
+        initSet.add((descriptor.value as () => unknown).bind(target));
     };
 }
 

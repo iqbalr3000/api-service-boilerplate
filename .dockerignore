@@ -35,3 +35,9 @@ postgres-data
 venv
 .buddy
 .vscode
+
+.git
+.env
+.env.*
+!.env.example
+tests

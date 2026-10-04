@@ -1,38 +1,33 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
 
-type HashOptions = {
-    saltLength?: number;
-    keyLength?: number;
-};
+const scryptAsync = promisify(scrypt) as (password: string, salt: string, keyLength: number) => Promise<Buffer>;
 
-export function hashPassword(password: string, options: HashOptions = {}) {
-    const { saltLength = 16, keyLength = 64 } = options;
+const SALT_LENGTH = 16;
+const KEY_LENGTH = 64;
 
-    const salt = randomBytes(saltLength).toString('hex');
-    const hash = scryptSync(password, salt, keyLength).toString('hex');
+// Stored format: `<salt hex>:<key length>:<hash hex>`
+export async function hashPassword(password: string): Promise<string> {
+    const salt = randomBytes(SALT_LENGTH).toString('hex');
+    const hash = await scryptAsync(password, salt, KEY_LENGTH);
 
-    return `${salt}:${keyLength}:${hash}`;
+    return `${salt}:${KEY_LENGTH}:${hash.toString('hex')}`;
 }
 
-export function verifyPassword(password: string, stored: string) {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
     const [salt, keyLengthStr, key] = stored.split(':');
-
-    if (!salt || !keyLengthStr || !key) {
-        throw new Error('Invalid stored password format');
-    }
-
     const keyLength = Number(keyLengthStr);
 
-    if (!Number.isInteger(keyLength) || keyLength <= 0) {
+    if (!salt || !key || !Number.isInteger(keyLength) || keyLength <= 0) {
         return false;
     }
 
-    const hashBuffer = Uint8Array.from(Buffer.from(key, 'hex'));
-    const verifyBuffer = Uint8Array.from(scryptSync(password, salt, keyLength));
+    const storedHash = Buffer.from(key, 'hex');
+    const candidateHash = await scryptAsync(password, salt, keyLength);
 
-    if (hashBuffer.length !== verifyBuffer.length) {
+    if (storedHash.length !== candidateHash.length) {
         return false;
     }
 
-    return timingSafeEqual(hashBuffer, verifyBuffer);
+    return timingSafeEqual(storedHash, candidateHash);
 }

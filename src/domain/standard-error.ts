@@ -1,16 +1,11 @@
-export class StandardError extends Error {
-    public error_code: string;
+import { ErrorCode } from './errors';
 
-    public lastError?: Record<string, unknown> | null;
+export class StandardError extends Error {
+    public error_code: ErrorCode;
 
     public context?: Record<string, unknown> | null;
 
-    constructor(
-        errorCode: string,
-        message: string,
-        lastError?: Record<string, unknown> | null,
-        context?: Record<string, unknown> | null,
-    ) {
+    constructor(errorCode: ErrorCode, message: string, context?: Record<string, unknown> | null) {
         super(message);
 
         // So you can do typeof CustomError
@@ -18,7 +13,6 @@ export class StandardError extends Error {
 
         this.name = this.constructor.name;
         this.error_code = errorCode;
-        this.lastError = lastError;
         this.context = context;
     }
 }

@@ -44,12 +44,12 @@ describe('auth middleware', () => {
         (req.header as jest.Mock).mockReturnValue('Bearer token-123');
         mockedAuthService.authenticateToken.mockReturnValueOnce({
             ok: true,
-            user: { userId: 'u-1', email: 'u@mail.com' },
+            user: { userId: 'u-1', email: 'u@mail.com', permissions: [] },
         });
 
         auth()(req, res, next);
 
-        expect(req.auth).toEqual({ userId: 'u-1', email: 'u@mail.com' });
+        expect(req.auth).toEqual({ userId: 'u-1', email: 'u@mail.com', permissions: [] });
         expect(req.authToken).toBe('token-123');
         expect(next).toHaveBeenCalled();
     });

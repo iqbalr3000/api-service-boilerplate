@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from 'src/config';
 import { signToken, authenticateToken } from 'src/services/auth';
 
 describe('auth JWT round-trip', () => {
@@ -6,16 +8,33 @@ describe('auth JWT round-trip', () => {
 
         const result = authenticateToken(token);
 
-        expect(result.ok).toBe(true);
-        expect(result.user?.userId).toBe('u-1');
-        expect(result.user?.email).toBe('a@b.com');
-        expect(result.user?.permissions).toEqual(['sample:read']);
+        expect(result).toEqual({
+            ok: true,
+            user: { userId: 'u-1', email: 'a@b.com', name: 'A', permissions: ['sample:read'] },
+        });
+    });
+
+    it('rejects a malformed token', () => {
+        expect(authenticateToken('not.a.valid.token').ok).toBe(false);
     });
 
     it('rejects a token signed with a different secret', () => {
-        // A clearly invalid token (wrong signature) must not authenticate.
-        const result = authenticateToken('not.a.valid.token');
+        const forged = jwt.sign({ sub: 'u-1' }, 'another-secret', { algorithm: 'HS256' });
 
-        expect(result.ok).toBe(false);
+        expect(authenticateToken(forged).ok).toBe(false);
+    });
+
+    it('rejects a token without a subject', () => {
+        const token = jwt.sign({ email: 'a@b.com' }, JWT_SECRET, { algorithm: 'HS256' });
+
+        expect(authenticateToken(token).ok).toBe(false);
+    });
+
+    it('rejects an expired token', () => {
+        const token = jwt.sign({ sub: 'u-1', exp: Math.floor(Date.now() / 1000) - 10 }, JWT_SECRET, {
+            algorithm: 'HS256',
+        });
+
+        expect(authenticateToken(token).ok).toBe(false);
     });
 });

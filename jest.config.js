@@ -1,8 +1,9 @@
-const { resolve } = require('path'); // eslint-disable-line @typescript-eslint/no-var-requires
+const { resolve } = require('path');
 
 module.exports = {
     transform: {
-        '^.+\\.ts$': 'ts-jest',
+        // tsconfig.json only covers src (the build); tests also need jest types.
+        '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.eslint.json' }],
     },
     testMatch: ['**/tests/**/*.test.ts'],
     moduleNameMapper: {
@@ -12,7 +13,7 @@ module.exports = {
     moduleDirectories: ['node_modules'],
     modulePathIgnorePatterns: ['<rootDir>/dist/'],
     collectCoverage: false, // only collect coverage on full test suite run (see package.json script)
-    collectCoverageFrom: ['!src/**/index.ts', '!src/routes.ts', 'src/**/*.ts'],
+    collectCoverageFrom: ['src/**/*.ts', '!src/**/index.ts'],
     coveragePathIgnorePatterns: ['/node_modules/', 'dist/'],
     coverageReporters: ['json', 'json-summary', 'lcov', 'text', 'text-summary', 'html'],
     testEnvironment: 'node',

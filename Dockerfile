@@ -1,4 +1,4 @@
-FROM node:20 AS base
+FROM node:24 AS base
 
 # Builder
 FROM base AS builder
@@ -27,15 +27,12 @@ RUN set -ex; \
 
 
 # Dist
-FROM node:20-slim AS dist
+FROM node:24-slim AS dist
 WORKDIR /app
 
 COPY --chown=node:node --from=deps-builder /app/node_modules ./node_modules
 COPY --chown=node:node --from=builder /app/dist ./dist
 COPY --chown=node:node --from=builder /app/docs ./docs
-
-ARG VERSION
-ENV VERSION=$VERSION
 
 EXPOSE 3000
 

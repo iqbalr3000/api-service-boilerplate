@@ -29,7 +29,7 @@ export function auth() {
 
         const result = authenticateToken(token);
 
-        if (!result.ok || !result.user) {
+        if (!result.ok) {
             res.status(401).json({ error_code: ErrorCodes.USER_AUTH_ERROR, message: 'Invalid or expired token' });
             return;
         }

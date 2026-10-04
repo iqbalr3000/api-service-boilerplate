@@ -8,16 +8,14 @@ const doWork = async () => {
     await sleep(1000);
 };
 
-(async () => {
-    // Worker runner
-    // eslint-disable-next-line
-    while (true) {
+async function run() {
+    for (;;) {
         try {
-            await doWork(); // eslint-disable-line
+            await doWork();
         } catch (err) {
-            logError(err, `error in worker: ${err}`);
-        } finally {
-            logger.info('done');
+            logError(err, 'error in worker');
         }
     }
-})();
+}
+
+void run();

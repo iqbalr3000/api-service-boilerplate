@@ -3,6 +3,7 @@ import './module-alias';
 
 import { logError, logger } from 'src/libs/logger';
 import { createApp } from 'src/app';
+import { NODE_ENV, PORT } from 'src/config';
 import gracefulShutdown from 'http-graceful-shutdown';
 
 const PROXY_IDLE_TIMEOUT = 180; // Default idle timeout (seconds) of the reverse proxy / load balancer in front of this service
@@ -11,7 +12,7 @@ const PROXY_IDLE_TIMEOUT = 180; // Default idle timeout (seconds) of the reverse
  * Helper function to log an exit code before exiting the process.
  */
 const logAndExitProcess = (exitCode: number) => {
-    logger.info(`Exiting process: {exit_code_number: ${exitCode}`);
+    logger.info({ exit_code: exitCode }, 'Exiting process');
     process.exit(exitCode);
 };
 
@@ -21,19 +22,18 @@ const logAndExitProcess = (exitCode: number) => {
  * exit the process with code 1.
  */
 const setupProcessEventListeners = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    process.on('unhandledRejection', (reason: any) => {
-        logger.warn(`encountered unhandled rejection: { reason_object: ${reason} }`);
+    process.on('unhandledRejection', (reason: unknown) => {
+        logError(reason, 'encountered unhandled rejection');
         logAndExitProcess(1);
     });
 
     process.on('uncaughtException', (err: Error) => {
-        logError(err, `encountered uncaught exception: ${err}`);
+        logError(err, 'encountered uncaught exception');
         logAndExitProcess(1);
     });
 
     process.on('warning', (warning: Error) => {
-        logger.warn(`encountered warning: {warning_object: ${warning}}`);
+        logger.warn(warning, 'encountered warning');
     });
 };
 
@@ -41,11 +41,11 @@ const setupProcessEventListeners = () => {
  * Start an Express server and installs signal handlers on the
  * process for graceful shutdown.
  */
-(async () => {
+async function main() {
     try {
-        const { app } = await createApp();
-        const server = app.listen(app.get('port'), () => {
-            logger.info(`Started express server: {port_number: ${app.get('port')}, env_string: ${app.get('env')}}`);
+        const { app, dataSource } = await createApp();
+        const server = app.listen(PORT, () => {
+            logger.info({ port: PORT, node_env: NODE_ENV }, 'Started express server');
         });
 
         /**
@@ -64,9 +64,16 @@ const setupProcessEventListeners = () => {
         server.keepAliveTimeout = (PROXY_IDLE_TIMEOUT + 1) * 1000;
         server.headersTimeout = (PROXY_IDLE_TIMEOUT + 5) * 1000;
 
-        gracefulShutdown(server);
+        gracefulShutdown(server, {
+            onShutdown: async () => {
+                await dataSource.destroy();
+            },
+        });
         setupProcessEventListeners();
     } catch (err) {
-        logError(err, `error caught in server.ts: ${err}`);
+        logError(err, 'failed to start server');
+        logAndExitProcess(1);
     }
-})();
+}
+
+void main();

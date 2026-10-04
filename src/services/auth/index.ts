@@ -26,18 +26,16 @@ export function signToken(subject: TokenSubject): string {
     );
 }
 
-function normalizeUser(payload: Record<string, unknown>): AuthUser | null {
-    const userId = String(payload.sub ?? payload.userId ?? payload.user_id ?? payload.id ?? '');
-    if (!userId) {
+function toAuthUser(payload: jwt.JwtPayload): AuthUser | null {
+    if (!payload.sub) {
         return null;
     }
 
     return {
-        ...payload,
-        userId,
-        email: payload.email ? String(payload.email) : undefined,
-        name: payload.name ? String(payload.name) : undefined,
-        permissions: Array.isArray(payload.permissions) ? payload.permissions.map((x) => String(x)) : undefined,
+        userId: payload.sub,
+        email: typeof payload.email === 'string' ? payload.email : undefined,
+        name: typeof payload.name === 'string' ? payload.name : undefined,
+        permissions: Array.isArray(payload.permissions) ? payload.permissions.map(String) : [],
     };
 }
 
@@ -51,11 +49,11 @@ function normalizeUser(payload: Record<string, unknown>): AuthUser | null {
 export function authenticateToken(token: string): AuthResult {
     try {
         const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-        if (typeof payload !== 'object' || payload === null) {
+        if (typeof payload === 'string') {
             return { ok: false, error: 'unauthorized' };
         }
 
-        const user = normalizeUser(payload as Record<string, unknown>);
+        const user = toAuthUser(payload);
         if (!user) {
             return { ok: false, error: 'unauthorized' };
         }
@@ -73,7 +71,7 @@ export function authenticateToken(token: string): AuthResult {
  * (e.g. an OAuth `scope` string or roles).
  */
 export function hasPermission(user: AuthUser, permission: string): boolean {
-    return Array.isArray(user.permissions) && user.permissions.includes(permission);
+    return user.permissions.includes(permission);
 }
 
 export type { AuthUser };

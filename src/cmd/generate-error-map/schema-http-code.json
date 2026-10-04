@@ -4,5 +4,6 @@
     "Error403Response": 403,
     "Error404Response": 404,
     "Error422Response": 422,
+    "Error429Response": 429,
     "Error500Response": 500
 }

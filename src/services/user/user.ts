@@ -1,3 +1,4 @@
+import { QueryFailedError } from 'typeorm';
 import { Initializer } from 'src/decorators';
 import { StandardError } from 'src/domain/standard-error';
 import { ErrorCodes } from 'src/domain/errors';
@@ -5,6 +6,16 @@ import { User } from 'src/domain/user';
 import { getUserRepository, UserRepository } from 'src/libs/typeorm/user';
 import { hashPassword, verifyPassword } from 'src/libs/util/password';
 import { PublicUser, RegisterPayload } from './types';
+
+const PG_UNIQUE_VIOLATION = '23505';
+
+function isUniqueViolation(error: unknown): boolean {
+    return error instanceof QueryFailedError && (error.driverError as { code?: string }).code === PG_UNIQUE_VIOLATION;
+}
+
+function emailTakenError() {
+    return new StandardError(ErrorCodes.UNPROCESSABLE_ENTITY_ERROR, 'Email already registered');
+}
 
 export class UserService {
     private static userRepository: UserRepository;
@@ -19,18 +30,26 @@ export class UserService {
 
         const existing = await this.userRepository.findOneBy({ email });
         if (existing) {
-            throw new StandardError(ErrorCodes.UNPROCESSABLE_ENTITY_ERROR, 'Email already registered');
+            throw emailTakenError();
         }
 
         // New users start with no permissions — grant them out-of-band per your needs.
         const user = this.userRepository.create({
             email,
-            passwordHash: hashPassword(payload.password),
+            passwordHash: await hashPassword(payload.password),
             name: payload.name?.trim() || null,
             permissions: [],
         });
 
-        return this.userRepository.save(user);
+        try {
+            return await this.userRepository.save(user);
+        } catch (error) {
+            // A concurrent registration can pass the check above and lose the race on the unique index.
+            if (isUniqueViolation(error)) {
+                throw emailTakenError();
+            }
+            throw error;
+        }
     }
 
     static async verifyCredentials(email: string, password: string): Promise<User | null> {
@@ -39,7 +58,7 @@ export class UserService {
             return null;
         }
 
-        return verifyPassword(password, user.passwordHash) ? user : null;
+        return (await verifyPassword(password, user.passwordHash)) ? user : null;
     }
 
     static toPublicUser(user: User): PublicUser {
@@ -47,7 +66,7 @@ export class UserService {
             id: user.id,
             email: user.email,
             name: user.name,
-            permissions: user.permissions ?? [],
+            permissions: user.permissions,
         };
     }
 }

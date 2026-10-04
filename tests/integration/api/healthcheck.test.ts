@@ -1,10 +1,11 @@
+import { Express } from 'express';
 import supertest from 'supertest';
 import { DataSource } from 'typeorm';
 
 import { createApp } from 'src/app';
 
 describe('Healthcheck Integration tests', () => {
-    let server: Express.Application;
+    let server: Express;
     let dataSource: DataSource;
 
     beforeAll(async () => {

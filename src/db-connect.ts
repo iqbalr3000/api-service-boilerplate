@@ -7,41 +7,27 @@ import { logError, logger } from './libs/logger';
 import { OrmConfig } from './libs/typeorm/ormconfig';
 import { IS_TEST } from './config';
 
-// Handles unstable/intermitten connection lost to DB
+// pg emits `error` on the pool when an idle client dies (DB restart, network blip). The pool itself
+// stays usable and replaces the client on next checkout — but an unhandled `error` event crashes the
+// process, so we only need to listen and log.
 function connectionGuard(dataSource: DataSource) {
-    // Access underlying pg driver
-    if (dataSource.driver instanceof PostgresDriver) {
-        const pool = dataSource.driver.master as Pool;
-
-        // Add handler on pool error event
-        pool.on('error', async (err: Error) => {
-            logError(err, 'Connection pool erring out, Reconnecting...');
-            try {
-                await dataSource.destroy();
-            } catch (innerErr) {
-                logError(innerErr, `Failed to close connection: ${innerErr}`);
-            }
-            while (!dataSource.isInitialized) {
-                try {
-                    await dataSource.initialize(); // eslint-disable-line
-                    logger.info('Reconnected DB');
-                } catch (error) {
-                    logError(error, `Reconnect Error: ${error}`);
-                }
-
-                if (!dataSource.isInitialized) {
-                    // Throttle retry
-                    await sleep(500); // eslint-disable-line
-                }
-            }
-        });
+    if (!(dataSource.driver instanceof PostgresDriver)) {
+        return;
     }
+
+    // TypeORM types its pg pools as `any`.
+    const { master, slaves } = dataSource.driver as unknown as { master: Pool; slaves: Pool[] };
+    const pools = [master, ...slaves];
+    pools.forEach((pool) => {
+        pool.on('error', (err: Error) => {
+            logError(err, 'Idle DB client error; the pool will replace it');
+        });
+    });
 }
 
 // 1. Wait for db to come online and connect
-// 2. On connection instability, able to reconnect
-// 3. The app should never die due to connection issue
-// 3.a. We rethrow the connection error in test mode to prevent open handles issue in Jest
+// 2. Idle client errors are logged, not fatal (see connectionGuard)
+// 3. We rethrow the connection error in test mode to prevent open handles issue in Jest
 export async function connect(): Promise<DataSource> {
     let dataSource: DataSource | undefined;
 
@@ -49,10 +35,9 @@ export async function connect(): Promise<DataSource> {
     while (dataSource === undefined || !dataSource.isInitialized) {
         try {
             dataSource = new DataSource(OrmConfig);
-            // eslint-disable-next-line no-await-in-loop
             await dataSource.initialize();
         } catch (error) {
-            logError(error, `createConnection Error: ${error}`);
+            logError(error, 'DB connection failed, retrying');
 
             if (IS_TEST) {
                 throw error;
@@ -61,7 +46,7 @@ export async function connect(): Promise<DataSource> {
 
         if (dataSource === undefined || !dataSource.isInitialized) {
             // Throttle retry
-            await sleep(500); // eslint-disable-line
+            await sleep(500);
         }
     }
 

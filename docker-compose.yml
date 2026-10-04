@@ -19,16 +19,10 @@ services:
     container_name: 'api-service-boilerplate'
     ports:
       - 3000:3000
-    environment:
-      - NODE_ENV=development
-      - PGHOST=postgres
-      - PGROHOST=postgres
-      - PGPORT=5432
-      - PGROPORT=5432
     env_file:
       - ./.env
-    volumes:
-      - ./:/app
-      - /app/node_modules
-      - /app/dist
-      - /app/docs
+    # Overrides .env: inside the compose network the DB is the `postgres` service on its internal port.
+    environment:
+      - NODE_ENV=production
+      - PGHOST=postgres
+      - PGPORT=5432

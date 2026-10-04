@@ -10,7 +10,7 @@ export class DbMigration1774000000001 implements MigrationInterface {
                 "email" text NOT NULL,
                 "password_hash" text NOT NULL,
                 "name" text,
-                "permissions" text NOT NULL DEFAULT '',
+                "permissions" text[] NOT NULL DEFAULT '{}',
                 "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_users_id" PRIMARY KEY ("id"),

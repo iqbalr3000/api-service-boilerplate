@@ -1,6 +1,0 @@
-node_modules/
-dist/
-coverage/
-.eslintrc.js
-jest.config.js
-jest-global-setup.js

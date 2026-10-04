@@ -1,11 +1,11 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 
 @Entity('users')
+@Unique('UQ_users_email', ['email'])
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Index({ unique: true })
     @Column({ type: 'text' })
     email!: string;
 
@@ -15,8 +15,7 @@ export class User {
     @Column({ type: 'text', nullable: true })
     name!: string | null;
 
-    // Stored as a comma-separated text column (TypeORM `simple-array`).
-    @Column({ type: 'simple-array', default: '' })
+    @Column({ type: 'text', array: true, default: '{}' })
     permissions!: string[];
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

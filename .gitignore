@@ -7,4 +7,5 @@ coverage/
 postgres-data/
 .DS_Store
 
-CLAUDE.md
+# Personal, uncommitted agent notes
+CLAUDE.local.md

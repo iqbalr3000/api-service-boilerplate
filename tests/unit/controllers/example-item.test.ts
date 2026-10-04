@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { ExampleItemController } from 'src/controllers/example-item';
-import { ExampleItemService } from 'src/services/example-item';
+import { ExampleItemCreatePayload, ExampleItemService } from 'src/services/example-item';
 import { StandardError } from 'src/domain/standard-error';
 import { ErrorCodes } from 'src/domain/errors';
 
@@ -8,17 +8,20 @@ jest.mock('src/services/example-item');
 
 describe('ExampleItemController', () => {
     const mockedService = ExampleItemService as jest.Mocked<typeof ExampleItemService>;
-    const res = { status: undefined, json: undefined, send: undefined } as unknown as Response;
-    const next = jest.fn() as jest.MockedFunction<NextFunction>;
+    let res: Response;
+
+    const createRequest = (name: string) => ({ body: { name } }) as Request<unknown, unknown, ExampleItemCreatePayload>;
 
     beforeEach(() => {
-        res.status = jest.fn().mockReturnValue(res);
-        res.json = jest.fn().mockReturnValue(res);
-        res.send = jest.fn().mockReturnValue(res);
         jest.clearAllMocks();
+        res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn().mockReturnThis(),
+            send: jest.fn().mockReturnThis(),
+        } as unknown as Response;
     });
 
-    it('create returns 201', async () => {
+    it('create returns 201 with a trimmed name', async () => {
         mockedService.create.mockResolvedValueOnce({
             id: 'id-1',
             name: 'Item A',
@@ -27,30 +30,25 @@ describe('ExampleItemController', () => {
             updatedAt: new Date(),
         });
 
-        await ExampleItemController.create({ body: { name: 'Item A' } } as Request, res, next);
+        await ExampleItemController.create(createRequest(' Item A '), res);
 
+        expect(mockedService.create).toHaveBeenCalledWith({ name: 'Item A', description: undefined });
         expect(res.status).toHaveBeenCalledWith(201);
-        expect(next).not.toHaveBeenCalled();
     });
 
-    it('create forwards a VALIDATION_ERROR StandardError when name is blank', async () => {
-        await ExampleItemController.create({ body: { name: '  ' } } as Request, res, next);
+    it('create rejects a blank name with VALIDATION_ERROR', async () => {
+        await expect(ExampleItemController.create(createRequest('  '), res)).rejects.toMatchObject(
+            new StandardError(ErrorCodes.VALIDATION_ERROR, 'name is required'),
+        );
 
         expect(mockedService.create).not.toHaveBeenCalled();
-        expect(next).toHaveBeenCalledTimes(1);
-        const error = next.mock.calls[0][0] as unknown as StandardError;
-        expect(error).toBeInstanceOf(StandardError);
-        expect(error.error_code).toBe(ErrorCodes.VALIDATION_ERROR);
     });
 
-    it('getById forwards an ITEM_NOT_FOUND StandardError when missing', async () => {
+    it('getById rejects with ITEM_NOT_FOUND when missing', async () => {
         mockedService.findById.mockResolvedValueOnce(null);
 
-        await ExampleItemController.getById({ params: { id: 'missing' } } as unknown as Request, res, next);
-
-        expect(next).toHaveBeenCalledTimes(1);
-        const error = next.mock.calls[0][0] as unknown as StandardError;
-        expect(error).toBeInstanceOf(StandardError);
-        expect(error.error_code).toBe(ErrorCodes.ITEM_NOT_FOUND);
+        await expect(
+            ExampleItemController.getById({ params: { id: 'missing' } } as unknown as Request<{ id: string }>, res),
+        ).rejects.toMatchObject({ error_code: ErrorCodes.ITEM_NOT_FOUND });
     });
 });

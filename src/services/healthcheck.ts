@@ -11,7 +11,8 @@ export class HealthcheckService {
     static init() {
         const db = getDB();
         this.db = db;
-        this.migrationExecutor = new MigrationExecutor(db, db.createQueryRunner('master'));
+        // No query runner passed: the executor acquires and releases a connection per call.
+        this.migrationExecutor = new MigrationExecutor(db);
     }
 
     static async isDBReady(): Promise<boolean> {
