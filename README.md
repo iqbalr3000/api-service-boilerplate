@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/iqbalr3000/api-service-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/iqbalr3000/api-service-boilerplate/actions/workflows/ci.yml)
 
-A minimal, production-friendly Node.js API boilerplate.
+A minimal Express 5 + TypeScript + PostgreSQL API starter with the production essentials built in: strict types, OpenAPI validation, JWT auth, health probes, graceful shutdown and CI.
 
 The goal is a fast start for new services with a clear structure and as little speculative abstraction as possible. Add modules when real requirements appear, not before.
 
